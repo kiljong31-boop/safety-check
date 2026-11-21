@@ -21,8 +21,8 @@
     body { margin: 0; padding: 16px; background: var(--bg); color: var(--text); }
     .container { max-width: 540px; margin: 0 auto; background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     h1 { font-size: 20px; margin: 0 0 16px; text-align: center; color: #0f172a; }
-    .meta-group { margin-bottom: 14px; }
-    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .meta-group { margin-bottom: 16px; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
     .meta-group label, .memo-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #475569; }
     .meta-group input {
       width: 100%;
@@ -107,11 +107,7 @@
 <div class="container">
   <h1>📋 일일 안전 점검 리스트</h1>
 
-  <div class="meta-group">
-    <label for="inspectorName">점검자 성명</label>
-    <input type="text" id="inspectorName" name="inspectorName" placeholder="이름을 입력하세요" />
-  </div>
-
+  <!-- 1. 업체명 / 가판명 (점검자 성명 위 배치) -->
   <div class="meta-grid">
     <div class="meta-group" style="margin-bottom: 0;">
       <label for="companyInput">점검 업체 (검색·선택·입력)</label>
@@ -129,7 +125,7 @@
     </div>
 
     <div class="meta-group" style="margin-bottom: 0;">
-      <label for="boothInput">가판 (검색·선택·입력)</label>
+      <label for="boothInput">가판 (기존 가판명)</label>
       <input
         type="text"
         id="boothInput"
@@ -141,6 +137,12 @@
       <datalist id="boothList"></datalist>
       <div class="field-hint">업체 선택 시 해당 가판 우선 표시</div>
     </div>
+  </div>
+
+  <!-- 2. 점검자 성명 -->
+  <div class="meta-group">
+    <label for="inspectorName">점검자 성명</label>
+    <input type="text" id="inspectorName" name="inspectorName" placeholder="이름을 입력하세요" />
   </div>
 
   <!-- 10개 점검 항목 HTML 직접 고정 -->
@@ -236,10 +238,10 @@
 <div id="pdfReport">
   <h2>일일 안전 점검 결과 보고서</h2>
   <div class="pdf-info-box">
-    <span>점검자 성명: <span id="pdfInspector">-</span></span>
-    <span>점검 일시: <span id="pdfDate">-</span></span>
     <span>점검 업체: <span id="pdfCompany">-</span></span>
     <span>점검 가판: <span id="pdfBooth">-</span></span>
+    <span>점검자 성명: <span id="pdfInspector">-</span></span>
+    <span>점검 일시: <span id="pdfDate">-</span></span>
   </div>
   <table>
     <thead>
@@ -267,40 +269,40 @@
 
   // 업체별 지정 및 기존 가판명 리스트 (1~34번)
   const INSPECTION_TARGETS = [
-    { no: 1, company: "BBQ", booth: "BBQ(스카이크루즈)" },
-    { no: 2, company: "CGV", booth: "모노브레드(공연장)" },
-    { no: 3, company: "CGV", booth: "오징어(공연장)" },
-    { no: 4, company: "CGV", booth: "CGV(락스빌)" },
-    { no: 5, company: "HS마켓", booth: "이레(로봇VR)" },
-    { no: 6, company: "HS마켓", booth: "이레(트레일러)" },
-    { no: 7, company: "HS마켓", booth: "오오츄(스노우)" },
-    { no: 8, company: "HS마켓", booth: "앤티앤스프레즐(스노우)" },
-    { no: 9, company: "다정식품", booth: "소프트(몽키밸리1)" },
-    { no: 10, company: "다정식품", booth: "이레(AWS)" },
-    { no: 11, company: "다정식품", booth: "이레(정문) ※ 푸드트럭" },
-    { no: 12, company: "다정식품", booth: "이레(푸드트럭)" },
-    { no: 13, company: "미스터밀크", booth: "소프트(비룡2)" },
-    { no: 14, company: "미스터밀크", booth: "소프트(사파리)" },
-    { no: 15, company: "미스터밀크", booth: "소프트(스낵버스터)" },
-    { no: 16, company: "미스터밀크", booth: "소프트(정문)" },
-    { no: 17, company: "미스터밀크", booth: "소프트(포시즌가든)" },
-    { no: 18, company: "미스터밀크", booth: "나루아토(소다파운틴)" },
-    { no: 19, company: "미스터밀크", booth: "아이스쿨(소다파운틴)" },
-    { no: 20, company: "앤티앤스", booth: "앤티앤스프레즐(매장)" },
-    { no: 21, company: "오마뎅", booth: "카페(굿프렌즈캐빈)" },
-    { no: 22, company: "오마뎅", booth: "구슬(콜럼버스)" },
-    { no: 23, company: "오마뎅", booth: "아이스쿨(스낵버스터)" },
-    { no: 24, company: "오마뎅", booth: "오오츄(로스트밸리)" },
-    { no: 25, company: "오오츄", booth: "오오츄(라피아자)" },
-    { no: 26, company: "오오츄", booth: "오오츄(락스빌)" },
-    { no: 27, company: "오크베리", booth: "구슬(티티카카)" },
-    { no: 28, company: "오크베리", booth: "아이스쿨(티티카카)" },
-    { no: 29, company: "쥬시", booth: "소프트(코스타스)" },
-    { no: 30, company: "쥬시", booth: "소프트(회전목마)" },
-    { no: 31, company: "쥬시", booth: "구슬(공연장)" },
-    { no: 32, company: "쥬시", booth: "소떡소떡(뮤직가든)" },
-    { no: 33, company: "쥬시", booth: "쿠치나(장미원)" },
-    { no: 34, company: "카페아모제", booth: "아모제" }
+    { no: 1, company: "BBQ", booth: "BBQ(스카이크루즈)" }, //
+    { no: 2, company: "CGV", booth: "모노브레드(공연장)" }, //[cite: 1]
+    { no: 3, company: "CGV", booth: "오징어(공연장)" }, //[cite: 1]
+    { no: 4, company: "CGV", booth: "CGV(락스빌)" }, //[cite: 1]
+    { no: 5, company: "HS마켓", booth: "이레(로봇VR)" }, //[cite: 1]
+    { no: 6, company: "HS마켓", booth: "이레(트레일러)" }, //[cite: 1]
+    { no: 7, company: "HS마켓", booth: "오오츄(스노우)" }, //[cite: 1]
+    { no: 8, company: "HS마켓", booth: "앤티앤스프레즐(스노우)" }, //[cite: 1]
+    { no: 9, company: "다정식품", booth: "소프트(몽키밸리1)" }, //[cite: 1]
+    { no: 10, company: "다정식품", booth: "이레(AWS)" }, //[cite: 1]
+    { no: 11, company: "다정식품", booth: "이레(정문) ※ 푸드트럭" }, //[cite: 1]
+    { no: 12, company: "다정식품", booth: "이레(푸드트럭)" }, //[cite: 1]
+    { no: 13, company: "미스터밀크", booth: "소프트(비룡2)" }, //[cite: 1]
+    { no: 14, company: "미스터밀크", booth: "소프트(사파리)" }, //[cite: 1]
+    { no: 15, company: "미스터밀크", booth: "소프트(스낵버스터)" }, //[cite: 1]
+    { no: 16, company: "미스터밀크", booth: "소프트(정문)" }, //[cite: 1]
+    { no: 17, company: "미스터밀크", booth: "소프트(포시즌가든)" }, //[cite: 1]
+    { no: 18, company: "미스터밀크", booth: "나루아토(소다파운틴)" }, //[cite: 1]
+    { no: 19, company: "미스터밀크", booth: "아이스쿨(소다파운틴)" }, //[cite: 1]
+    { no: 20, company: "앤티앤스", booth: "앤티앤스프레즐(매장)" }, //[cite: 1]
+    { no: 21, company: "오마뎅", booth: "카페(굿프렌즈캐빈)" }, //[cite: 1]
+    { no: 22, company: "오마뎅", booth: "구슬(콜럼버스)" }, //[cite: 1]
+    { no: 23, company: "오마뎅", booth: "아이스쿨(스낵버스터)" }, //[cite: 1]
+    { no: 24, company: "오마뎅", booth: "오오츄(로스트밸리)" }, //[cite: 1]
+    { no: 25, company: "오오츄", booth: "오오츄(라피아자)" }, //[cite: 1]
+    { no: 26, company: "오오츄", booth: "오오츄(락스빌)" }, //[cite: 1]
+    { no: 27, company: "오크베리", booth: "구슬(티티카카)" }, //[cite: 1]
+    { no: 28, company: "오크베리", booth: "아이스쿨(티티카카)" }, //[cite: 1]
+    { no: 29, company: "쥬시", booth: "소프트(코스타스)" }, //[cite: 1]
+    { no: 30, company: "쥬시", booth: 30, booth: "소프트(회전목마)" }, //[cite: 1]
+    { no: 31, company: "쥬시", booth: "구슬(공연장)" }, //[cite: 1]
+    { no: 32, company: "쥬시", booth: "소떡소떡(뮤직가든)" }, //[cite: 1]
+    { no: 33, company: "쥬시", booth: "쿠치나(장미원)" }, //[cite: 1]
+    { no: 34, company: "카페아모제", booth: "아모제" } //[cite: 1]
   ];
 
   function populateBoothDatalist(filterCompany) {
@@ -424,11 +426,6 @@
     const statusMsg = document.getElementById("statusMsg");
     const submitBtn = document.getElementById("submitBtn");
 
-    if (!inspector) {
-      alert("점검자 성명을 입력해 주세요.");
-      document.getElementById("inspectorName").focus();
-      return;
-    }
     if (!company) {
       alert("점검 업체를 입력하거나 선택해 주세요.");
       document.getElementById("companyInput").focus();
@@ -437,6 +434,11 @@
     if (!booth) {
       alert("점검할 가판을 입력하거나 선택해 주세요.");
       document.getElementById("boothInput").focus();
+      return;
+    }
+    if (!inspector) {
+      alert("점검자 성명을 입력해 주세요.");
+      document.getElementById("inspectorName").focus();
       return;
     }
     if (answers.includes(null)) {
@@ -457,10 +459,10 @@
       const dateStr = now.toLocaleString("ko-KR");
       const fileDate = now.toISOString().slice(0, 10);
 
-      document.getElementById("pdfInspector").textContent = inspector;
-      document.getElementById("pdfDate").textContent = dateStr;
       document.getElementById("pdfCompany").textContent = company;
       document.getElementById("pdfBooth").textContent = booth;
+      document.getElementById("pdfInspector").textContent = inspector;
+      document.getElementById("pdfDate").textContent = dateStr;
 
       const qTexts = document.querySelectorAll("#questionsContainer .question-text");
       const tbody = document.getElementById("pdfTableBody");
