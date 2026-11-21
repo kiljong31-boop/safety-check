@@ -21,10 +21,20 @@
     body { margin: 0; padding: 16px; background: var(--bg); color: var(--text); }
     .container { max-width: 540px; margin: 0 auto; background: var(--card); padding: 20px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     h1 { font-size: 20px; margin: 0 0 16px; text-align: center; color: #0f172a; }
-    .meta-group { margin-bottom: 16px; }
+    .meta-group { margin-bottom: 14px; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
     .meta-group label, .memo-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #475569; }
-    .meta-group input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; }
-    
+    .meta-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+      color: var(--text);
+    }
+    .field-hint { margin-top: 4px; font-size: 11.5px; color: #64748b; }
+
     .question-item { padding: 14px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .question-text { font-size: 14px; line-height: 1.4; flex: 1; font-weight: 500; }
     .ox-group { display: flex; gap: 8px; }
@@ -60,20 +70,21 @@
     }
     #pdfReport h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 14px; }
     .pdf-info-box {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
       background: #f1f5f9;
       border: 1px solid #333;
       padding: 10px 14px;
       margin-bottom: 14px;
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: bold;
     }
     #pdfReport table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 13px; }
     #pdfReport th, #pdfReport td { border: 1px solid #333; padding: 7px 10px; text-align: left; }
     #pdfReport th { background: #f1f5f9; text-align: center; }
     #pdfReport td.ans { text-align: center; font-weight: bold; width: 60px; }
-    
+
     .pdf-memo-box {
       border: 1px solid #333;
       padding: 10px 12px;
@@ -85,6 +96,10 @@
     }
     #pdfPhotoArea { text-align: center; margin-top: 10px; }
     #pdfPhotoArea img { max-width: 460px; max-height: 280px; border: 1px solid #ccc; }
+
+    @media (max-width: 480px) {
+      .meta-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -95,6 +110,37 @@
   <div class="meta-group">
     <label for="inspectorName">점검자 성명</label>
     <input type="text" id="inspectorName" name="inspectorName" placeholder="이름을 입력하세요" />
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-group" style="margin-bottom: 0;">
+      <label for="companyInput">점검 업체 (검색·선택·입력)</label>
+      <input
+        type="text"
+        id="companyInput"
+        list="companyList"
+        placeholder="업체명 입력 또는 선택"
+        autocomplete="off"
+        oninput="onCompanyInput()"
+        onchange="onCompanyInput()"
+      />
+      <datalist id="companyList"></datalist>
+      <div class="field-hint">목록에서 고르거나 직접 입력</div>
+    </div>
+
+    <div class="meta-group" style="margin-bottom: 0;">
+      <label for="boothInput">가판 (검색·선택·입력)</label>
+      <input
+        type="text"
+        id="boothInput"
+        list="boothList"
+        placeholder="가판명 입력 또는 선택"
+        autocomplete="off"
+        oninput="onBoothInput()"
+      />
+      <datalist id="boothList"></datalist>
+      <div class="field-hint">업체 선택 시 해당 가판 우선 표시</div>
+    </div>
   </div>
 
   <!-- 10개 점검 항목 HTML 직접 고정 -->
@@ -192,6 +238,8 @@
   <div class="pdf-info-box">
     <span>점검자 성명: <span id="pdfInspector">-</span></span>
     <span>점검 일시: <span id="pdfDate">-</span></span>
+    <span>점검 업체: <span id="pdfCompany">-</span></span>
+    <span>점검 가판: <span id="pdfBooth">-</span></span>
   </div>
   <table>
     <thead>
@@ -216,6 +264,116 @@
 <script>
   // ★ 본인의 Google Apps Script 웹 앱 URL을 아래 따옴표 안에 붙여넣으세요 ★
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxa0p65su0_Z6wc90yVtDxTw_fvgg6m7idxGBlGahlcFnJAnW4kpYZZorzcHkt-fBvj/exec";
+
+  // 업체별 지정 및 기존 가판명 리스트 (1~34번)
+  const INSPECTION_TARGETS = [
+    { no: 1, company: "BBQ", booth: "BBQ(스카이크루즈)" },
+    { no: 2, company: "CGV", booth: "모노브레드(공연장)" },
+    { no: 3, company: "CGV", booth: "오징어(공연장)" },
+    { no: 4, company: "CGV", booth: "CGV(락스빌)" },
+    { no: 5, company: "HS마켓", booth: "이레(로봇VR)" },
+    { no: 6, company: "HS마켓", booth: "이레(트레일러)" },
+    { no: 7, company: "HS마켓", booth: "오오츄(스노우)" },
+    { no: 8, company: "HS마켓", booth: "앤티앤스프레즐(스노우)" },
+    { no: 9, company: "다정식품", booth: "소프트(몽키밸리1)" },
+    { no: 10, company: "다정식품", booth: "이레(AWS)" },
+    { no: 11, company: "다정식품", booth: "이레(정문) ※ 푸드트럭" },
+    { no: 12, company: "다정식품", booth: "이레(푸드트럭)" },
+    { no: 13, company: "미스터밀크", booth: "소프트(비룡2)" },
+    { no: 14, company: "미스터밀크", booth: "소프트(사파리)" },
+    { no: 15, company: "미스터밀크", booth: "소프트(스낵버스터)" },
+    { no: 16, company: "미스터밀크", booth: "소프트(정문)" },
+    { no: 17, company: "미스터밀크", booth: "소프트(포시즌가든)" },
+    { no: 18, company: "미스터밀크", booth: "나루아토(소다파운틴)" },
+    { no: 19, company: "미스터밀크", booth: "아이스쿨(소다파운틴)" },
+    { no: 20, company: "앤티앤스", booth: "앤티앤스프레즐(매장)" },
+    { no: 21, company: "오마뎅", booth: "카페(굿프렌즈캐빈)" },
+    { no: 22, company: "오마뎅", booth: "구슬(콜럼버스)" },
+    { no: 23, company: "오마뎅", booth: "아이스쿨(스낵버스터)" },
+    { no: 24, company: "오마뎅", booth: "오오츄(로스트밸리)" },
+    { no: 25, company: "오오츄", booth: "오오츄(라피아자)" },
+    { no: 26, company: "오오츄", booth: "오오츄(락스빌)" },
+    { no: 27, company: "오크베리", booth: "구슬(티티카카)" },
+    { no: 28, company: "오크베리", booth: "아이스쿨(티티카카)" },
+    { no: 29, company: "쥬시", booth: "소프트(코스타스)" },
+    { no: 30, company: "쥬시", booth: "소프트(회전목마)" },
+    { no: 31, company: "쥬시", booth: "구슬(공연장)" },
+    { no: 32, company: "쥬시", booth: "소떡소떡(뮤직가든)" },
+    { no: 33, company: "쥬시", booth: "쿠치나(장미원)" },
+    { no: 34, company: "카페아모제", booth: "아모제" }
+  ];
+
+  function populateBoothDatalist(filterCompany) {
+    const boothList = document.getElementById("boothList");
+    boothList.innerHTML = "";
+
+    const targetList = filterCompany
+      ? INSPECTION_TARGETS.filter(item => item.company.toLowerCase() === filterCompany.toLowerCase())
+      : INSPECTION_TARGETS;
+
+    const candidates = targetList.length > 0 ? targetList : INSPECTION_TARGETS;
+
+    candidates.forEach(item => {
+      const option = document.createElement("option");
+      option.value = item.booth;
+      option.label = `${item.no}번 · ${item.company}`;
+      boothList.appendChild(option);
+    });
+  }
+
+  function initTargetInputs() {
+    const companyList = document.getElementById("companyList");
+    const uniqueCompanies = [...new Set(INSPECTION_TARGETS.map(item => item.company))];
+
+    uniqueCompanies.forEach(company => {
+      const count = INSPECTION_TARGETS.filter(item => item.company === company).length;
+      const option = document.createElement("option");
+      option.value = company;
+      option.label = `${count}개 가판`;
+      companyList.appendChild(option);
+    });
+
+    populateBoothDatalist("");
+  }
+
+  function onCompanyInput() {
+    const companyVal = document.getElementById("companyInput").value.trim();
+    const boothInput = document.getElementById("boothInput");
+
+    populateBoothDatalist(companyVal);
+
+    const matchedBooths = INSPECTION_TARGETS.filter(
+      item => item.company.toLowerCase() === companyVal.toLowerCase()
+    );
+
+    if (matchedBooths.length === 1) {
+      boothInput.value = matchedBooths[0].booth;
+    } else if (matchedBooths.length > 0 && boothInput.value.trim()) {
+      const stillValid = matchedBooths.some(
+        item => item.booth.toLowerCase() === boothInput.value.trim().toLowerCase()
+      );
+      if (!stillValid) {
+        boothInput.value = "";
+      }
+    }
+  }
+
+  function onBoothInput() {
+    const boothVal = document.getElementById("boothInput").value.trim();
+    const companyInput = document.getElementById("companyInput");
+
+    if (!boothVal || companyInput.value.trim()) return;
+
+    const exactMatch = INSPECTION_TARGETS.find(
+      item => item.booth.toLowerCase() === boothVal.toLowerCase()
+    );
+    if (exactMatch) {
+      companyInput.value = exactMatch.company;
+      populateBoothDatalist(exactMatch.company);
+    }
+  }
+
+  initTargetInputs();
 
   const answers = [null, null, null, null, null, null, null, null, null, null];
   let compressedImageBase64 = "";
@@ -260,6 +418,8 @@
 
   async function generateAndSend() {
     const inspector = document.getElementById("inspectorName").value.trim();
+    const company = document.getElementById("companyInput").value.trim();
+    const booth = document.getElementById("boothInput").value.trim();
     const memo = document.getElementById("memoInput").value.trim();
     const statusMsg = document.getElementById("statusMsg");
     const submitBtn = document.getElementById("submitBtn");
@@ -267,6 +427,16 @@
     if (!inspector) {
       alert("점검자 성명을 입력해 주세요.");
       document.getElementById("inspectorName").focus();
+      return;
+    }
+    if (!company) {
+      alert("점검 업체를 입력하거나 선택해 주세요.");
+      document.getElementById("companyInput").focus();
+      return;
+    }
+    if (!booth) {
+      alert("점검할 가판을 입력하거나 선택해 주세요.");
+      document.getElementById("boothInput").focus();
       return;
     }
     if (answers.includes(null)) {
@@ -289,6 +459,8 @@
 
       document.getElementById("pdfInspector").textContent = inspector;
       document.getElementById("pdfDate").textContent = dateStr;
+      document.getElementById("pdfCompany").textContent = company;
+      document.getElementById("pdfBooth").textContent = booth;
 
       const qTexts = document.querySelectorAll("#questionsContainer .question-text");
       const tbody = document.getElementById("pdfTableBody");
@@ -321,7 +493,8 @@
       pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
 
       const pdfBase64 = pdf.output("datauristring").split(",")[1];
-      const fileName = "안전점검_" + inspector + "_" + fileDate + ".pdf";
+      const safeBooth = booth.replace(/[\\/:*?"<>|]/g, "_");
+      const fileName = "안전점검_" + company + "_" + safeBooth + "_" + fileDate + ".pdf";
 
       await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
@@ -329,6 +502,8 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           inspector: inspector,
+          company: company,
+          booth: booth,
           date: dateStr,
           fileName: fileName,
           pdfBase64: pdfBase64
@@ -336,7 +511,7 @@
       });
 
       statusMsg.style.color = "#16a34a";
-      statusMsg.innerText = "✅ [" + inspector + "] 님의 점검 결과 전송이 완료되었습니다!";
+      statusMsg.innerText = "✅ [" + company + " - " + booth + "] 점검 결과 전송이 완료되었습니다!";
     } catch (error) {
       console.error(error);
       statusMsg.style.color = "#dc2626";
